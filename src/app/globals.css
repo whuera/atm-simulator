@@ -1,0 +1,1136 @@
+@import "tailwindcss";
+
+/* ============================================================
+   ECLIPSE IDE DESIGN TOKENS
+   ============================================================ */
+@theme {
+  /* Background */
+  --color-eclipse-bg:         #F0F0F0;
+  --color-eclipse-sidebar-bg: #F5F5F5;
+  --color-eclipse-titlebar:   #2B2D3A;
+  --color-eclipse-dark:       #1E1E1E;
+  --color-eclipse-console:    #1C1C1C;
+
+  /* Borders */
+  --color-eclipse-border:        #C8C8C8;
+  --color-eclipse-border-light:  #E4E4E4;
+  --color-eclipse-border-medium: #D4D4D4;
+
+  /* Blue / interactive */
+  --color-eclipse-blue:      #0451A5;
+  --color-eclipse-blue-act:  #0070C8;
+  --color-eclipse-hover:     #CCE4F7;
+  --color-eclipse-hover-bd:  #82BDDB;
+  --color-eclipse-active:    #3B78C4;
+  --color-eclipse-row-hover: #EAF3FD;
+
+  /* Text */
+  --color-eclipse-text:       #1A1A1A;
+  --color-eclipse-text-sec:   #333333;
+  --color-eclipse-text-muted: #777777;
+
+  /* Fonts */
+  --font-ui:   "Segoe UI", Arial, sans-serif;
+  --font-mono: Consolas, "Courier New", monospace;
+
+  /* Base sizes */
+  --text-base: 12px;
+  --text-ui:   11px;
+}
+
+/* ============================================================
+   UNIVERSAL RESET
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ============================================================
+   BASE HTML / BODY
+   ============================================================ */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 12px;
+  color: #1A1A1A;
+  background: #F0F0F0;
+}
+
+/* ============================================================
+   CUSTOM WEBKIT SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F0F0F0;
+}
+::-webkit-scrollbar-thumb {
+  background: #C0C0C0;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #A0A0A0;
+}
+
+/* ============================================================
+   ECLIPSE LAYOUT COMPONENTS
+   ============================================================ */
+
+/* Main window — fills the entire viewport */
+.eclipse-window {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Title bar (28 px) */
+.eclipse-titlebar {
+  height: 28px;
+  background: #2B2D3A;
+  color: #CCCCCC;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 11px;
+  user-select: none;
+}
+
+/* Menu bar (24 px) */
+.eclipse-menubar {
+  height: 24px;
+  background: #2B2D3A;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Individual menu item */
+.eclipse-menu-item {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 11px;
+  color: #CCCCCC;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.1s;
+  user-select: none;
+}
+.eclipse-menu-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.eclipse-menu-item.active {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Toolbar (30 px) */
+.eclipse-toolbar {
+  height: 30px;
+  background: #EBEBEB;
+  border-bottom: 1px solid #C8C8C8;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* Workbench — fills space between toolbar and statusbar */
+.eclipse-workbench {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  gap: 1px;
+  background: #C8C8C8; /* 1 px gaps between panes act as separators */
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Sidebar / Package Explorer panel (220 px) */
+.eclipse-sidebar {
+  width: 220px;
+  background: #F5F5F5;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Editor area (right-hand side, flexible) */
+.eclipse-editor-area {
+  flex: 1;
+  background: #F0F0F0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Scrollable content inside an editor pane */
+.eclipse-editor-content {
+  flex: 1;
+  overflow: auto;
+  background: #FFFFFF;
+  padding: 0;
+}
+
+/* Status bar (20 px) */
+.eclipse-statusbar {
+  height: 20px;
+  background: #F0F0F0;
+  border-top: 1px solid #C8C8C8;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.statusbar-segment {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 11px;
+  color: #333333;
+  border-right: 1px solid #C8C8C8;
+  white-space: nowrap;
+}
+.statusbar-segment:first-child {
+  border-left: 1px solid #C8C8C8;
+}
+
+/* ============================================================
+   VIEW / PANEL HEADER
+   ============================================================ */
+.view-header {
+  height: 26px;
+  background: #E8E8E8;
+  border-bottom: 1px solid #C8C8C8;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #333333;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* ============================================================
+   TREE ITEMS  (Package Explorer style)
+   ============================================================ */
+.tree-item {
+  display: flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 11px;
+  color: #1A1A1A;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  gap: 4px;
+  user-select: none;
+}
+.tree-item:hover {
+  background: #CCE4F7;
+  outline: 1px solid #82BDDB;
+  outline-offset: -1px;
+}
+.tree-item.active {
+  background: #3B78C4;
+  color: #FFFFFF;
+}
+
+.tree-item-nested {
+  padding-left: 24px;
+}
+
+.tree-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   EDITOR TAB STRIP
+   ============================================================ */
+.editor-tabstrip {
+  display: flex;
+  flex-direction: row;
+  background: #D4D4D4;
+  border-bottom: 1px solid #C8C8C8;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+  height: 26px;
+  align-items: flex-end;
+}
+.editor-tabstrip::-webkit-scrollbar {
+  height: 4px;
+}
+
+.editor-tab {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  height: 24px;
+  font-size: 11px;
+  color: #555555;
+  background: #E8E8E8;
+  border-right: 1px solid #C8C8C8;
+  border-top: 1px solid #C8C8C8;
+  cursor: pointer;
+  white-space: nowrap;
+  gap: 6px;
+  flex-shrink: 0;
+  user-select: none;
+  transition: background 0.1s;
+}
+.editor-tab:hover {
+  background: #F0F0F0;
+}
+.editor-tab.active {
+  background: #FFFFFF;
+  color: #1A1A1A;
+  border-top: 2px solid #0451A5;
+  border-bottom: none;
+}
+
+/* ============================================================
+   MDI WINDOW  (floating / dockable panel)
+   ============================================================ */
+.mdi-window {
+  background: #FFFFFF;
+  border: 1px solid #C8C8C8;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.mdi-title {
+  height: 26px;
+  background: #2B2D3A;
+  color: #CCCCCC;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.mdi-toolbar {
+  height: 28px;
+  background: #EBEBEB;
+  border-bottom: 1px solid #C8C8C8;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.mdi-body {
+  flex: 1;
+  overflow: auto;
+  padding: 8px;
+}
+
+.mdi-status {
+  height: 20px;
+  background: #F0F0F0;
+  border-top: 1px solid #C8C8C8;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 11px;
+  color: #555555;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   TOOLBAR BUTTONS
+   ============================================================ */
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  min-width: 22px;
+  padding: 0 4px;
+  font-size: 11px;
+  color: #333333;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  gap: 3px;
+  transition: background 0.1s, border-color 0.1s;
+  user-select: none;
+}
+.toolbar-btn:hover {
+  background: #CCE4F7;
+  border-color: #82BDDB;
+}
+.toolbar-btn:active {
+  background: #B8D8F4;
+  border-color: #0070C8;
+}
+.toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.toolbar-sep {
+  width: 1px;
+  height: 18px;
+  background: #C8C8C8;
+  margin: 0 3px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   GENERAL BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #1A1A1A;
+  background: #FFFFFF;
+  border: 1px solid #C8C8C8;
+  border-radius: 0;
+  cursor: pointer;
+  gap: 4px;
+  min-width: 72px;
+  height: 26px;
+  transition: background 0.1s, border-color 0.1s;
+  user-select: none;
+  white-space: nowrap;
+}
+.btn:hover {
+  background: #CCE4F7;
+  border-color: #0070C8;
+}
+.btn:active {
+  background: #B8D8F4;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn-primary {
+  background: #0451A5;
+  color: #FFFFFF;
+  border-color: #0451A5;
+}
+.btn-primary:hover {
+  background: #0070C8;
+  border-color: #0070C8;
+  color: #FFFFFF;
+}
+.btn-primary:active {
+  background: #003d8a;
+}
+
+.btn-danger {
+  background: #D32F2F;
+  color: #FFFFFF;
+  border-color: #C62828;
+}
+.btn-danger:hover {
+  background: #B71C1C;
+  border-color: #B71C1C;
+  color: #FFFFFF;
+}
+.btn-danger:active {
+  background: #7f0000;
+}
+
+.btn-sm {
+  height: 22px;
+  padding: 2px 10px;
+  font-size: 11px;
+  min-width: 56px;
+}
+
+/* ============================================================
+   FORM ELEMENTS
+   ============================================================ */
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.form-label {
+  font-size: 11px;
+  color: #333333;
+  min-width: 100px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.form-label.req::after {
+  content: " *";
+  color: #C00000;
+}
+
+.form-input {
+  height: 22px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #1A1A1A;
+  background: #FFFFFF;
+  border: 1px solid #C8C8C8;
+  border-radius: 0;
+  outline: none;
+  transition: border-color 0.1s, box-shadow 0.1s;
+}
+.form-input:focus {
+  border-color: #0070C8;
+  box-shadow: 0 0 0 1px #0070C8;
+}
+.form-input:disabled {
+  background: #F0F0F0;
+  color: #777777;
+  cursor: default;
+}
+
+/* Width variants */
+.form-input.long  { width: 280px; }
+.form-input.med   { width: 180px; }
+.form-input.short { width: 80px; }
+.form-input.mono {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+}
+
+.form-select {
+  height: 22px;
+  padding: 0 4px;
+  font-size: 12px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #1A1A1A;
+  background: #FFFFFF;
+  border: 1px solid #C8C8C8;
+  border-radius: 0;
+  outline: none;
+  cursor: pointer;
+}
+.form-select:focus {
+  border-color: #0070C8;
+  box-shadow: 0 0 0 1px #0070C8;
+}
+
+/* Fieldset-like visual grouping */
+.fieldset-group {
+  border: 1px solid #C8C8C8;
+  padding: 8px 12px 10px;
+  margin-bottom: 10px;
+  background: #FAFAFA;
+}
+.fieldset-legend {
+  font-size: 11px;
+  font-weight: 600;
+  color: #333333;
+  padding: 0 4px;
+  margin-left: -4px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ============================================================
+   TABLES  (data grid style)
+   ============================================================ */
+.grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: #1A1A1A;
+}
+.grid-table th {
+  background: #E8E8E8;
+  border: 1px solid #C8C8C8;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  color: #333333;
+  white-space: nowrap;
+  user-select: none;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.grid-table td {
+  border: 1px solid #E4E4E4;
+  padding: 3px 8px;
+  vertical-align: middle;
+  color: #1A1A1A;
+}
+.grid-table tr:hover td {
+  background: #EAF3FD;
+}
+.grid-table tr.selected td {
+  background: #3B78C4;
+  color: #FFFFFF;
+}
+
+/* ============================================================
+   BADGES
+   ============================================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 2px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.badge-ok {
+  background: #DFF0D8;
+  color: #3C763D;
+  border: 1px solid #A8D5A2;
+}
+.badge-err {
+  background: #F9E0E0;
+  color: #B71C1C;
+  border: 1px solid #F5C2C2;
+}
+.badge-warn {
+  background: #FFF8DC;
+  color: #7D6608;
+  border: 1px solid #F0DE88;
+}
+
+/* ============================================================
+   ALERTS
+   ============================================================ */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 12px;
+  font-size: 12px;
+  border: 1px solid transparent;
+  gap: 8px;
+}
+.alert-ok {
+  background: #DFF0D8;
+  border-color: #A8D5A2;
+  color: #2D6A2D;
+}
+.alert-err {
+  background: #F9E0E0;
+  border-color: #F5C2C2;
+  color: #B71C1C;
+}
+
+/* ============================================================
+   LOGIN DIALOG
+   ============================================================ */
+.login-bg {
+  position: fixed;
+  inset: 0;
+  background: #2B2D3A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.login-dialog {
+  width: 340px;
+  background: #F0F0F0;
+  border: 1px solid #888888;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.login-titlebar {
+  height: 28px;
+  background: #2B2D3A;
+  color: #CCCCCC;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  gap: 6px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.login-banner {
+  height: 60px;
+  background: #0451A5;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.login-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.login-field label {
+  font-size: 11px;
+  color: #333333;
+}
+.login-field input {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 12px;
+  border: 1px solid #C8C8C8;
+  background: #FFFFFF;
+  outline: none;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+.login-field input:focus {
+  border-color: #0070C8;
+  box-shadow: 0 0 0 1px #0070C8;
+}
+
+.login-btn {
+  height: 28px;
+  width: 100%;
+  background: #0451A5;
+  color: #FFFFFF;
+  border: 1px solid #0451A5;
+  font-size: 12px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.1s, border-color 0.1s;
+  margin-top: 4px;
+}
+.login-btn:hover {
+  background: #0070C8;
+  border-color: #0070C8;
+}
+.login-btn:active {
+  background: #003d8a;
+}
+.login-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.login-footer {
+  padding: 8px 16px;
+  font-size: 10px;
+  color: #777777;
+  text-align: center;
+  border-top: 1px solid #E4E4E4;
+}
+
+/* ============================================================
+   ATM CHASSIS
+   ============================================================ */
+.atm-chassis {
+  position: relative;
+  width: 520px;
+  min-height: 700px;
+  background:
+    linear-gradient(
+      to right,
+      #1a1a1a 0px,
+      #2e2e2e 4px,
+      #3a3a3a 8px,
+      #2a2a2a 12px,
+      #333333 50%,
+      #2a2a2a calc(100% - 12px),
+      #3a3a3a calc(100% - 8px),
+      #2e2e2e calc(100% - 4px),
+      #1a1a1a 100%
+    );
+  border-radius: 12px 12px 8px 8px;
+  border: 2px solid #111111;
+  box-shadow:
+    0 0 0 1px #555555,
+    4px 4px 16px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0 24px;
+  user-select: none;
+}
+
+/* Brand / header bar */
+.atm-brand-bar {
+  width: calc(100% - 32px);
+  height: 40px;
+  background: linear-gradient(to right, #1a1a1a, #252525, #1a1a1a);
+  border: 1px solid #444444;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+/* Outer bezel that frames the screen */
+.atm-screen-bezel {
+  position: relative;
+  width: calc(100% - 48px);
+  background: #111111;
+  border: 3px solid #222222;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 2px 8px rgba(0, 0, 0, 0.8),
+    0 0 0 1px #555555;
+  padding: 10px;
+  flex-shrink: 0;
+}
+
+/* Actual screen surface */
+.atm-screen {
+  min-height: 280px;
+  background: #001800;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #003300;
+  box-shadow: inset 0 0 30px rgba(0, 100, 0, 0.2);
+}
+
+/* Function key columns left / right of screen */
+.atm-fn-keys-left {
+  position: absolute;
+  left: -44px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.atm-fn-keys-right {
+  position: absolute;
+  right: -44px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.atm-fn-key {
+  width: 36px;
+  height: 28px;
+  background: linear-gradient(to bottom, #3a3a3a, #252525);
+  border: 1px solid #555555;
+  border-radius: 3px;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: #888888;
+  transition: background 0.1s, color 0.1s;
+}
+.atm-fn-key:hover {
+  background: linear-gradient(to bottom, #4a4a4a, #333333);
+  color: #AAAAAA;
+}
+.atm-fn-key:active {
+  background: linear-gradient(to bottom, #222222, #333333);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.5),
+    inset 0 2px 3px rgba(0, 0, 0, 0.4);
+  transform: translateY(1px);
+}
+
+/* Card slot */
+.atm-card-slot-area {
+  width: calc(100% - 48px);
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 20px;
+  flex-shrink: 0;
+}
+.atm-card-slot {
+  width: 80px;
+  height: 8px;
+  background: linear-gradient(to bottom, #111111, #222222);
+  border: 1px solid #444444;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Numeric + action keypad */
+.atm-keypad {
+  width: 200px;
+  background: #1a1a1a;
+  border: 1px solid #333333;
+  border-radius: 6px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 14px;
+  flex-shrink: 0;
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.atm-key {
+  height: 34px;
+  background: linear-gradient(to bottom, #3c3c3c, #282828);
+  border: 1px solid #505050;
+  border-radius: 3px;
+  color: #CCCCCC;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: background 0.08s, box-shadow 0.08s, transform 0.08s;
+  user-select: none;
+}
+.atm-key:hover {
+  background: linear-gradient(to bottom, #4e4e4e, #383838);
+  color: #EEEEEE;
+}
+.atm-key:active {
+  background: linear-gradient(to bottom, #1e1e1e, #2e2e2e);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.5),
+    inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  transform: translateY(1px);
+}
+
+/* Receipt / cash dispenser slot */
+.atm-receipt-slot {
+  width: calc(100% - 80px);
+  height: 10px;
+  background: linear-gradient(to bottom, #111111, #1a1a1a);
+  border: 1px solid #333333;
+  border-radius: 2px;
+  margin-top: 12px;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   ATM SCREEN CONTENT
+   ============================================================ */
+.atm-screen-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 52px; /* horizontal space for fn-key columns */
+  gap: 6px;
+  min-height: 0;
+}
+
+.atm-screen-header {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(0, 255, 65, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.atm-screen-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+/* Option rows aligned with fn keys */
+.atm-screen-options {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex: 1;
+  padding: 4px 0;
+}
+
+.atm-option-label {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  padding: 0 4px;
+}
+.atm-option-label.right {
+  justify-content: flex-end;
+}
+.atm-option-label.left {
+  justify-content: flex-start;
+}
+
+/* Left-column content inside screen body */
+.atm-screen-left-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+/* ============================================================
+   PIN ENTRY DOTS
+   ============================================================ */
+.pin-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: currentColor;
+  margin: 0 3px;
+}
+.pin-dot.empty {
+  background: transparent;
+  border: 1px solid currentColor;
+  opacity: 0.5;
+}
+
+/* ============================================================
+   AMOUNT QUICK-SELECT BUTTONS
+   ============================================================ */
+.atm-amount-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: rgba(0, 200, 0, 0.1);
+  border: 1px solid rgba(0, 200, 0, 0.3);
+  color: inherit;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.1s;
+  font-family: Consolas, "Courier New", monospace;
+}
+.atm-amount-btn:hover {
+  background: rgba(0, 200, 0, 0.25);
+}
+.atm-amount-btn:active {
+  background: rgba(0, 200, 0, 0.4);
+}
+
+/* ============================================================
+   LED STATUS INDICATORS
+   ============================================================ */
+.atm-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  display: inline-block;
+  flex-shrink: 0;
+}
+.atm-led.green {
+  background: #00e040;
+  box-shadow: 0 0 5px #00e040, 0 0 2px #00e040;
+}
+.atm-led.red {
+  background: #FF1A1A;
+  box-shadow: 0 0 5px #FF1A1A, 0 0 2px #FF1A1A;
+}
+.atm-led.yellow {
+  background: #FFD700;
+  box-shadow: 0 0 5px #FFD700, 0 0 2px #FFD700;
+}
+.atm-led.off {
+  background: #1a1a1a;
+  box-shadow: none;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+
+/* Cursor / element blinking */
+@keyframes blink {
+  0%,  49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Cash / receipt dispense */
+@keyframes dispense {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(0);     opacity: 0; }
+}
+.dispense-anim {
+  animation: dispense 1.8s ease-in-out forwards;
+}
+
+/* Spinner for loading states */
+@keyframes atm-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.atm-spinner {
+  display: inline-block;
+  animation: atm-spin 1s linear infinite;
+}
