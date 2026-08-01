@@ -20,10 +20,11 @@ export type ATMState =
   | 'EJECTING'
 
 export interface CardData {
-  cardNumber: string      // 16 digits
+  cardNumber: string           // 16 digits (PAN)
   cardName: string
-  expiry: string          // MM/YY
-  cvv: string             // 3 digits
+  expiry: string               // MM/YY
+  cvv: string                  // 3–4 digits
+  cardType: 'debit' | 'credit'
 }
 
 export interface TransactionSummary {
@@ -74,7 +75,12 @@ export const useATMStore = create<ATMStore>((set, get) => ({
   isProcessing: false,
   message: '',
 
-  insertCard: (card) => set({ card, state: 'PIN_ENTRY', pin: '', pinConfirmed: false }),
+  insertCard: (card) => {
+    set({ card, state: 'INSERTING_CARD' })
+    setTimeout(() => {
+      set({ state: 'PIN_ENTRY', pin: '', pinConfirmed: false })
+    }, 1500)
+  },
 
   pressKey: (key) => {
     const { state, pin, customAmount } = get()
