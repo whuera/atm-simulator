@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { buildNDCRequest } from '@/lib/ndc'
+import { useConsoleStore } from './consoleStore'
 
 export type ATMState =
   | 'IDLE'
@@ -16,6 +18,8 @@ export type ATMState =
   | 'PAYMENT_SERVICE'
   | 'PAYMENT_AMOUNT'
   | 'PAYMENT_CONFIRM'
+  | 'AUTHORIZING'
+  | 'BALANCE_RESULT'
   | 'SUMMARY'
   | 'EJECTING'
 
@@ -41,14 +45,16 @@ interface ATMStore {
   card: CardData | null
   pin: string             // accumulated PIN digits
   pinConfirmed: boolean
-  selectedFlow: 'deposit' | 'withdraw' | 'payment' | null
+  selectedFlow: 'deposit' | 'withdraw' | 'payment' | 'balance' | null
   amount: number | null
   customAmount: string    // for typing custom amount
   selectedService: string | null
   lastTransaction: TransactionSummary | null
+  lastBalance: number | null   // result of the last balance inquiry
   keypadBuffer: string    // general purpose buffer for keypad input
   isProcessing: boolean
   message: string         // status message on screen
+  simulatorId: string | null   // current simulator — used as the NDC terminal (LUNO) id
 
   // Actions
   insertCard: (card: CardData) => void
@@ -59,6 +65,9 @@ interface ATMStore {
   setProcessing: (v: boolean) => void
   setMessage: (msg: string) => void
   setLastTransaction: (tx: TransactionSummary) => void
+  setSimulatorContext: (simulatorId: string) => void
+  authorizeAndComplete: () => Promise<void>
+  requestBalanceInquiry: () => Promise<void>
 }
 
 export const useATMStore = create<ATMStore>((set, get) => ({
@@ -71,9 +80,11 @@ export const useATMStore = create<ATMStore>((set, get) => ({
   customAmount: '',
   selectedService: null,
   lastTransaction: null,
+  lastBalance: null,
   keypadBuffer: '',
   isProcessing: false,
   message: '',
+  simulatorId: null,
 
   insertCard: (card) => {
     set({ card, state: 'INSERTING_CARD' })
@@ -142,7 +153,7 @@ export const useATMStore = create<ATMStore>((set, get) => ({
   },
 
   pressFunctionKey: (side, index) => {
-    const { state, card } = get()
+    const { state } = get()
 
     if (state === 'MAIN_MENU') {
       // Left side keys: Depósito (0), Retiro (1), Pagos (2), Salir (3)
@@ -152,6 +163,10 @@ export const useATMStore = create<ATMStore>((set, get) => ({
         if (index === 2)
           set({ state: 'PAYMENT', selectedFlow: 'payment', amount: null, selectedService: null })
         if (index === 3) get().cancel()
+      }
+      // Right side keys: Consulta de Saldo (0)
+      if (side === 'right' && index === 0) {
+        get().requestBalanceInquiry()
       }
     }
 
@@ -188,45 +203,20 @@ export const useATMStore = create<ATMStore>((set, get) => ({
       state === 'PAYMENT_CONFIRM'
     ) {
       if (side === 'left' && index === 0) {
-        // Confirm
-        const type = get().selectedFlow!
-        const amount = get().amount!
-        const cardLast4 = card?.cardNumber.slice(-4) ?? '****'
-        if (type === 'withdraw') {
-          set({ state: 'DISPENSING', isProcessing: true })
-          setTimeout(() => {
-            set({
-              state: 'SUMMARY',
-              isProcessing: false,
-              lastTransaction: {
-                type,
-                amount,
-                cardLast4,
-                timestamp: new Date().toLocaleString('es-CL'),
-                status: 'success',
-              },
-            })
-          }, 2500)
-        } else {
-          set({
-            state: 'SUMMARY',
-            lastTransaction: {
-              type,
-              amount,
-              service: get().selectedService ?? undefined,
-              cardLast4,
-              timestamp: new Date().toLocaleString('es-CL'),
-              status: 'success',
-            },
-          })
-        }
+        get().authorizeAndComplete()
       }
       if (side === 'right' && index === 3) get().cancel()
     }
 
-    if (state === 'SUMMARY') {
+    if (state === 'SUMMARY' || state === 'BALANCE_RESULT') {
       // Any key: go back to main menu
-      set({ state: 'MAIN_MENU', amount: null, selectedFlow: null, selectedService: null })
+      set({
+        state: 'MAIN_MENU',
+        amount: null,
+        selectedFlow: null,
+        selectedService: null,
+        lastBalance: null,
+      })
     }
   },
 
@@ -241,6 +231,7 @@ export const useATMStore = create<ATMStore>((set, get) => ({
       selectedService: null,
       keypadBuffer: '',
       isProcessing: false,
+      lastBalance: null,
     })
     setTimeout(() => {
       set({ state: 'IDLE', card: null, lastTransaction: null })
@@ -258,6 +249,7 @@ export const useATMStore = create<ATMStore>((set, get) => ({
       customAmount: '',
       selectedService: null,
       lastTransaction: null,
+      lastBalance: null,
       keypadBuffer: '',
       isProcessing: false,
       message: '',
@@ -266,4 +258,159 @@ export const useATMStore = create<ATMStore>((set, get) => ({
   setProcessing: (v) => set({ isProcessing: v }),
   setMessage: (msg) => set({ message: msg }),
   setLastTransaction: (tx) => set({ lastTransaction: tx }),
+  setSimulatorContext: (simulatorId) => set({ simulatorId }),
+
+  // ───────────────────────────────────────────────────────────────────
+  // authorizeAndComplete — builds an NDC-style request for the current
+  // withdraw/deposit/payment flow, "sends" it to the simulated switch
+  // (/api/switch/authorize), logs the whole round trip to the console,
+  // and only then moves the ATM state forward.
+  // ───────────────────────────────────────────────────────────────────
+  authorizeAndComplete: async () => {
+    const { selectedFlow, amount, card, simulatorId, selectedService } = get()
+    const type = selectedFlow
+    if (!type || type === 'balance' || amount == null) return
+
+    const cardLast4 = card?.cardNumber.slice(-4) ?? '****'
+    const log = useConsoleStore.getState().append
+
+    set({ state: 'AUTHORIZING', isProcessing: true })
+
+    const request = buildNDCRequest({
+      simulatorId: simulatorId ?? 'unknown',
+      txnType: type,
+      amount,
+      cardNumber: card?.cardNumber ?? '0000000000000000',
+      expiry: card?.expiry ?? '00/00',
+      serviceName: type === 'payment' ? selectedService ?? undefined : undefined,
+    })
+
+    log('tx', `▶ Enviando mensaje NDC al switch autorizador (LUNO ${request.luno}, STAN ${request.stan})`)
+    log('info', request.raw)
+    request.fields.forEach(f => log('info', `   ${f.label.padEnd(16, ' ')}: ${f.value}`))
+    log('wait', '⏳ Esperando autorización del host...')
+
+    try {
+      const res = await fetch('/api/switch/authorize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stan: request.stan,
+          luno: request.luno,
+          txnType: type,
+          amount,
+          cardLast4,
+        }),
+      })
+      const data = await res.json()
+
+      log('rx', '◀ Respuesta del switch recibida')
+      log('info', data.raw ?? '(sin datos)')
+      ;(data.fields ?? []).forEach((f: { label: string; value: string }) =>
+        log('info', `   ${f.label.padEnd(16, ' ')}: ${f.value}`)
+      )
+
+      if (data.approved) {
+        log('ok', `✔ Transacción autorizada — código de respuesta ${data.responseCode}`)
+        if (type === 'withdraw') {
+          set({ state: 'DISPENSING' })
+          setTimeout(() => {
+            set({
+              state: 'SUMMARY',
+              isProcessing: false,
+              lastTransaction: {
+                type,
+                amount,
+                cardLast4,
+                timestamp: new Date().toLocaleString('es-CL'),
+                status: 'success',
+              },
+            })
+          }, 2200)
+        } else {
+          set({
+            state: 'SUMMARY',
+            isProcessing: false,
+            lastTransaction: {
+              type,
+              amount,
+              service: get().selectedService ?? undefined,
+              cardLast4,
+              timestamp: new Date().toLocaleString('es-CL'),
+              status: 'success',
+            },
+          })
+        }
+      } else {
+        log('err', `✘ Transacción rechazada por el switch — código de respuesta ${data.responseCode}`)
+        set({ isProcessing: false })
+        get().cancel()
+      }
+    } catch {
+      log('err', '✘ Error de comunicación con el switch autorizador')
+      set({ isProcessing: false })
+      get().cancel()
+    }
+  },
+
+  // ───────────────────────────────────────────────────────────────────
+  // requestBalanceInquiry — same NDC round trip as above, for a balance
+  // inquiry ("consulta de saldo") triggered directly from the main menu.
+  // ───────────────────────────────────────────────────────────────────
+  requestBalanceInquiry: async () => {
+    const { card, simulatorId } = get()
+    if (!card) return
+
+    const cardLast4 = card.cardNumber.slice(-4)
+    const log = useConsoleStore.getState().append
+
+    set({ state: 'AUTHORIZING', isProcessing: true, selectedFlow: 'balance' })
+
+    const request = buildNDCRequest({
+      simulatorId: simulatorId ?? 'unknown',
+      txnType: 'balance',
+      amount: null,
+      cardNumber: card.cardNumber,
+      expiry: card.expiry,
+    })
+
+    log('tx', `▶ Enviando mensaje NDC al switch autorizador (LUNO ${request.luno}, STAN ${request.stan})`)
+    log('info', request.raw)
+    request.fields.forEach(f => log('info', `   ${f.label.padEnd(16, ' ')}: ${f.value}`))
+    log('wait', '⏳ Esperando autorización del host...')
+
+    try {
+      const res = await fetch('/api/switch/authorize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stan: request.stan,
+          luno: request.luno,
+          txnType: 'balance',
+          amount: null,
+          cardLast4,
+        }),
+      })
+      const data = await res.json()
+
+      log('rx', '◀ Respuesta del switch recibida')
+      log('info', data.raw ?? '(sin datos)')
+      ;(data.fields ?? []).forEach((f: { label: string; value: string }) =>
+        log('info', `   ${f.label.padEnd(16, ' ')}: ${f.value}`)
+      )
+
+      if (data.approved) {
+        log('ok', `✔ Consulta autorizada — código de respuesta ${data.responseCode}`)
+        set({ state: 'BALANCE_RESULT', isProcessing: false, lastBalance: data.balance ?? null })
+      } else {
+        log('err', `✘ Consulta rechazada por el switch — código de respuesta ${data.responseCode}`)
+        set({ isProcessing: false })
+        get().cancel()
+      }
+    } catch {
+      log('err', '✘ Error de comunicación con el switch autorizador')
+      set({ isProcessing: false })
+      get().cancel()
+    }
+  },
 }))
