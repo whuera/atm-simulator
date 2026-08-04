@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useATMStore, type CardData, type ATMState } from '@/store/atmStore'
 import type { Simulator, SessionUser } from '@/lib/db/types'
+import NDCConsole from '@/components/simulator/NDCConsole'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -64,7 +65,10 @@ const NONE: Opts4 = [null, null, null, null]
 function getScreenLayout(state: ATMState): ScreenLayout {
   switch (state) {
     case 'MAIN_MENU':
-      return { left: ['Depósito', 'Retiro', 'Pago Servicios', 'Salir'], right: NONE }
+      return {
+        left: ['Depósito', 'Retiro', 'Pago Servicios', 'Salir'],
+        right: ['Consulta Saldo', null, null, null],
+      }
     case 'WITHDRAW':
       return {
         left: ['$10.000', '$20.000', '$50.000', '$100.000'],
@@ -81,7 +85,10 @@ function getScreenLayout(state: ATMState): ScreenLayout {
     case 'DEPOSIT_CONFIRM':
     case 'PAYMENT_CONFIRM':
       return { left: ['✓ Confirmar', null, null, null], right: [null, null, null, '✗ Cancelar'] }
+    case 'AUTHORIZING':
+      return { left: NONE, right: NONE }
     case 'SUMMARY':
+    case 'BALANCE_RESULT':
       return { left: ['Continuar', null, null, null], right: NONE }
     default:
       return { left: NONE, right: NONE }
@@ -217,8 +224,10 @@ interface CenterProps {
 }
 
 function CenterContent({ atmState, screenText, now }: CenterProps) {
-  const { card, pin, amount, customAmount, selectedService, lastTransaction, isProcessing } =
-    useATMStore()
+  const {
+    card, pin, amount, customAmount, selectedService, selectedFlow,
+    lastTransaction, lastBalance, isProcessing,
+  } = useATMStore()
   const blink = useBlink()
   const spinChars = ['|', '/', '—', '\\']
   const [spinIdx, setSpinIdx] = useState(0)
@@ -383,6 +392,42 @@ function CenterContent({ atmState, screenText, now }: CenterProps) {
           </div>
           <div style={{ ...t, fontSize: 8 }}>
             <span style={d}>Tarjeta: </span>**** {last4}
+          </div>
+        </div>
+      )
+    }
+
+    case 'AUTHORIZING': {
+      const flowLabel =
+        selectedFlow === 'balance' ? 'consulta de saldo'
+          : selectedFlow === 'withdraw' ? 'retiro'
+          : selectedFlow === 'deposit' ? 'depósito' : 'pago'
+      return (
+        <div style={wrap}>
+          <div style={{ ...t, fontSize: 18 }}>{spinChars[spinIdx]}</div>
+          <div style={{ ...t, fontSize: 11 }}>Autorizando {flowLabel}...</div>
+          <div style={{ ...d, fontSize: 8, textAlign: 'center', lineHeight: 1.5 }}>
+            Conectando con switch transaccional
+            <br />por favor espere
+          </div>
+        </div>
+      )
+    }
+
+    case 'BALANCE_RESULT': {
+      const last4 = card ? card.cardNumber.slice(-4) : '****'
+      return (
+        <div style={{ ...wrap, alignItems: 'flex-start', gap: 5 }}>
+          <div style={{ ...t, fontSize: 11, color: '#00ff88' }}>✓ Consulta de saldo</div>
+          <div style={{ ...t, fontSize: 9 }}>
+            <span style={d}>Tarjeta: </span>**** {last4}
+          </div>
+          <div style={{ ...d, fontSize: 9, marginTop: 4 }}>Saldo disponible:</div>
+          <div style={{ ...t, fontSize: 20 }}>
+            {lastBalance != null ? formatMoney(lastBalance) : '—'}
+          </div>
+          <div style={{ ...d, fontSize: 8, marginTop: 4, opacity: blink ? 0.7 : 0.25 }}>
+            Presione F1 para continuar
           </div>
         </div>
       )
@@ -602,7 +647,7 @@ function CardReaderPanel({ atmState, card, onInsert, onEject, primary }: CardRea
 
   return (
     <div style={{
-      width: 262,
+      width: '100%',
       flexShrink: 0,
       display: 'flex',
       flexDirection: 'column',
@@ -610,7 +655,7 @@ function CardReaderPanel({ atmState, card, onInsert, onEject, primary }: CardRea
       border: '1px solid #C8C8C8',
       borderRadius: 2,
       alignSelf: 'flex-start',
-      maxHeight: 'calc(100vh - 80px)',
+      maxHeight: 'calc(100vh - 320px)',
       overflowY: 'auto',
     }}>
       {/* Title bar */}
@@ -830,7 +875,9 @@ function FormField({
 // ─────────────────────────────────────────────────────────────────────────────
 export default function SimulatorClient({ simulator, session }: SimulatorClientProps) {
   const store = useATMStore()
-  const { state: atmState, pressKey, pressFunctionKey, insertCard, cancel, reset } = store
+  const {
+    state: atmState, pressKey, pressFunctionKey, insertCard, cancel, reset, setSimulatorContext,
+  } = store
   const transactionPosted = useRef(false)
   const [ledBlink, setLedBlink] = useState(true)
 
@@ -840,9 +887,11 @@ export default function SimulatorClient({ simulator, session }: SimulatorClientP
     return () => clearInterval(t)
   }, [])
 
-  // Reset store when simulator changes
+  // Reset store when simulator changes, and tell it which terminal (LUNO)
+  // to identify itself as when talking to the switch autorizador.
   useEffect(() => {
     reset()
+    setSimulatorContext(simulator.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simulator.id])
 
@@ -1063,14 +1112,20 @@ export default function SimulatorClient({ simulator, session }: SimulatorClientP
           </div>
         </div>
 
-        {/* ── Card Reader Panel ──────────────────────────────────────────── */}
-        <CardReaderPanel
-          atmState={atmState}
-          card={store.card}
-          onInsert={insertCard}
-          onEject={cancel}
-          primary={primary}
-        />
+        {/* ── Right column: Card Reader + NDC Console ──────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: 300, flexShrink: 0 }}>
+          <CardReaderPanel
+            atmState={atmState}
+            card={store.card}
+            onInsert={insertCard}
+            onEject={cancel}
+            primary={primary}
+          />
+
+          {/* Mini console — shows the NDC messages exchanged with the
+              simulated authorizer switch, Eclipse Console style. */}
+          <NDCConsole />
+        </div>
       </div>
     </div>
   )
