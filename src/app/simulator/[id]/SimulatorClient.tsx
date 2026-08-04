@@ -295,7 +295,7 @@ function CenterContent({ atmState, screenText, now }: CenterProps) {
       )
 
     case 'PIN_ENTRY': {
-      const dots = Array.from({ length: 8 }, (_, i) => i < pin.length)
+      const dots = Array.from({ length: 4 }, (_, i) => i < pin.length)
       return (
         <div style={wrap}>
           <div style={{ ...d, fontSize: 9 }}>Ingrese su PIN:</div>
@@ -319,7 +319,7 @@ function CenterContent({ atmState, screenText, now }: CenterProps) {
             OK confirmar · C borrar · CANC salir
           </div>
           <div style={{ ...d, fontSize: 8 }}>
-            {pin.length}/8{pin.length >= 4 ? ' ✓' : ` (mín. 4)`}
+            {pin.length}/4{pin.length === 4 ? ' ✓' : ''}
           </div>
         </div>
       )
@@ -949,45 +949,69 @@ export default function SimulatorClient({ simulator, session }: SimulatorClientP
     { label: 'C', key: 'CLEAR' }, { label: '0', key: '0' }, { label: 'OK', key: 'ENTER' },
   ]
 
+  const roleBadgeStyle =
+    session.role === 'admin'
+      ? { background: '#E05C00', color: '#fff' }
+      : { background: '#0451A5', color: '#fff' }
+
   return (
     <div style={{
-      // Fixed-height workbench, like .eclipse-window: top nav and bottom
-      // console dock always stay on screen — only the middle area scrolls.
+      // Fixed-height workbench, like .eclipse-window: chrome (titlebar,
+      // toolbar) and the bottom console dock always stay on screen —
+      // only the middle area scrolls. Same light Eclipse palette as the
+      // dashboard: dark titlebar, light toolbar, light workbench bg.
       height: '100vh',
-      background: '#1a1a1a',
+      background: '#F0F0F0',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
     }}>
-      {/* ── Top navigation bar ─────────────────────────────────────────── */}
-      <div style={{
-        height: 40, flexShrink: 0,
-        background: '#2B2D3A', borderBottom: '1px solid #111',
-        display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12,
-      }}>
-        <Link
-          href="/dashboard"
-          style={{ color: '#AAAAAA', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5, fontFamily: '"Segoe UI",Arial,sans-serif' }}
-        >
-          <span style={{ fontSize: 14 }}>◀</span>
-          <span>Volver al panel</span>
-        </Link>
-        <div style={{ width: 1, height: 20, background: '#444' }} />
-        <span style={{ color: '#CCCCCC', fontSize: 12, fontFamily: '"Segoe UI",Arial,sans-serif' }}>
-          {simulator.logoEmoji} {simulator.bankName}
+      {/* ── Titlebar — same class/colors as the dashboard's EclipseLayout ── */}
+      <div className="eclipse-titlebar" style={{ flexShrink: 0 }}>
+        <span style={{ fontSize: 14, flexShrink: 0 }}>{simulator.logoEmoji}</span>
+        <span style={{ fontWeight: 600, letterSpacing: '0.2px', flexShrink: 0 }}>
+          {simulator.bankName}
         </span>
         <div style={{ flex: 1 }} />
-        <span style={{ color: '#888', fontSize: 10, fontFamily: '"Segoe UI",Arial,sans-serif' }}>
-          {session.displayName} ({session.role})
-        </span>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00c040', boxShadow: '0 0 4px #00c040' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <span style={{ color: '#AAAAAA', fontSize: 11 }}>{session.displayName}</span>
+          <span style={{
+            ...roleBadgeStyle,
+            padding: '1px 6px',
+            borderRadius: 2,
+            fontSize: 10,
+            fontWeight: 'bold',
+            letterSpacing: '0.3px',
+            textTransform: 'uppercase',
+          }}>
+            {session.role}
+          </span>
+          <span style={{
+            width: 8, height: 8, borderRadius: '50%',
+            background: '#00c040', boxShadow: '0 0 4px #00c040', display: 'inline-block',
+          }} />
+        </div>
       </div>
 
-      {/* ── Main area: ATM + Card Reader Panel — the only scrollable band ── */}
+      {/* ── Toolbar — same class/colors as the dashboard's eclipse-toolbar ── */}
+      <div className="eclipse-toolbar" style={{ flexShrink: 0 }}>
+        <Link href="/dashboard" className="toolbar-btn" style={{ textDecoration: 'none' }}>
+          <span style={{ fontSize: 12 }}>&#x2190;</span>
+          <span>Volver al panel</span>
+        </Link>
+        <div className="toolbar-sep" />
+        <span style={{ fontSize: 11, color: '#555555', paddingLeft: 4, fontStyle: 'italic' }}>
+          Simulador ATM — {simulator.bankName}
+        </span>
+      </div>
+
+      {/* ── Main area: ATM + Card Reader Panel — the only scrollable band ──
+          White background, same as the dashboard's eclipse-editor-content. ── */}
       <div style={{
         flex: 1,
         minHeight: 0,
         overflow: 'auto',
+        background: '#FFFFFF',
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'center',
