@@ -647,7 +647,7 @@ function CardReaderPanel({ atmState, card, onInsert, onEject, primary }: CardRea
 
   return (
     <div style={{
-      width: '100%',
+      width: 262,
       flexShrink: 0,
       display: 'flex',
       flexDirection: 'column',
@@ -655,7 +655,7 @@ function CardReaderPanel({ atmState, card, onInsert, onEject, primary }: CardRea
       border: '1px solid #C8C8C8',
       borderRadius: 2,
       alignSelf: 'flex-start',
-      maxHeight: 'calc(100vh - 320px)',
+      maxHeight: '100%',
       overflowY: 'auto',
     }}>
       {/* Title bar */}
@@ -951,11 +951,13 @@ export default function SimulatorClient({ simulator, session }: SimulatorClientP
 
   return (
     <div style={{
-      minHeight: '100vh',
+      // Fixed-height workbench, like .eclipse-window: top nav and bottom
+      // console dock always stay on screen — only the middle area scrolls.
+      height: '100vh',
       background: '#1a1a1a',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'auto',
+      overflow: 'hidden',
     }}>
       {/* ── Top navigation bar ─────────────────────────────────────────── */}
       <div style={{
@@ -981,9 +983,11 @@ export default function SimulatorClient({ simulator, session }: SimulatorClientP
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00c040', boxShadow: '0 0 4px #00c040' }} />
       </div>
 
-      {/* ── Main area: ATM + Card Reader Panel ─────────────────────────── */}
+      {/* ── Main area: ATM + Card Reader Panel — the only scrollable band ── */}
       <div style={{
         flex: 1,
+        minHeight: 0,
+        overflow: 'auto',
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'center',
@@ -1112,21 +1116,20 @@ export default function SimulatorClient({ simulator, session }: SimulatorClientP
           </div>
         </div>
 
-        {/* ── Right column: Card Reader + NDC Console ──────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: 300, flexShrink: 0 }}>
-          <CardReaderPanel
-            atmState={atmState}
-            card={store.card}
-            onInsert={insertCard}
-            onEject={cancel}
-            primary={primary}
-          />
-
-          {/* Mini console — shows the NDC messages exchanged with the
-              simulated authorizer switch, Eclipse Console style. */}
-          <NDCConsole />
-        </div>
+        {/* ── Card Reader Panel ──────────────────────────────────────────── */}
+        <CardReaderPanel
+          atmState={atmState}
+          card={store.card}
+          onInsert={insertCard}
+          onEject={cancel}
+          primary={primary}
+        />
       </div>
+
+      {/* ── Console dock — full-width bottom panel (Eclipse Console view
+          style), shows the NDC messages exchanged with the simulated
+          authorizer switch. Docked below the workbench, not floating. ── */}
+      <NDCConsole />
     </div>
   )
 }

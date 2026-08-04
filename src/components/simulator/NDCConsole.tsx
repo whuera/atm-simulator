@@ -4,10 +4,10 @@ import { useEffect, useRef } from 'react'
 import { useConsoleStore, type ConsoleLine } from '@/store/consoleStore'
 
 // ─────────────────────────────────────────────────────────────────────────
-// NDCConsole — mini "Console view" (Eclipse IDE style) that shows the NDC
-// messages the terminal exchanges with the simulated authorizer switch.
-// Purely informational for the operator: proves the transaction was sent
-// and lets them watch the authorization round trip happen.
+// NDCConsole — bottom-docked "Console view" (Eclipse IDE style) that shows
+// the NDC messages the terminal exchanges with the simulated authorizer
+// switch. Purely informational for the operator: proves the transaction
+// was sent and lets them watch the authorization round trip happen.
 // ─────────────────────────────────────────────────────────────────────────
 
 function lineClass(kind: ConsoleLine['kind']): string {
@@ -32,32 +32,52 @@ export default function NDCConsole() {
   }, [lines.length])
 
   return (
-    <div className="ndc-console">
-      {/* Title bar — mirrors Eclipse's Console view header */}
-      <div className="ndc-console-header">
-        <span style={{ fontSize: 12 }}>🖥</span>
-        <span>Console — Switch Autorizador (NDC)</span>
+    <div className="ndc-console-dock">
+      {/* Tab strip — mirrors Eclipse's bottom Console / Problems / Tasks tabs */}
+      <div className="editor-tabstrip">
+        <div className="editor-tab active">
+          <span style={{ fontSize: 12 }}>🖥</span>
+          <span>Console</span>
+        </div>
+        <div className="editor-tab" style={{ opacity: 0.5, cursor: 'default' }}>
+          <span style={{ fontSize: 12 }}>⚠</span>
+          <span>Problems</span>
+        </div>
+        <div className="editor-tab" style={{ opacity: 0.5, cursor: 'default' }}>
+          <span style={{ fontSize: 12 }}>☑</span>
+          <span>Tasks</span>
+        </div>
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 9, opacity: 0.55 }}>{lines.length} líneas</span>
-        <button
-          onClick={clear}
-          title="Limpiar consola"
-          style={{
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.18)',
-            borderRadius: 2,
-            color: '#CCCCCC',
-            fontSize: 10,
-            padding: '2px 7px',
-            cursor: 'pointer',
-            fontFamily: '"Segoe UI",Arial,sans-serif',
-          }}
-        >
-          🗑 Limpiar
-        </button>
+        <div style={{
+          alignSelf: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          paddingRight: 8,
+        }}>
+          <span style={{ fontSize: 10, color: '#777777', fontFamily: '"Segoe UI",Arial,sans-serif' }}>
+            {lines.length} líneas
+          </span>
+          <button
+            onClick={clear}
+            title="Limpiar consola"
+            style={{
+              background: '#FFFFFF',
+              border: '1px solid #C8C8C8',
+              borderRadius: 2,
+              color: '#555555',
+              fontSize: 10,
+              padding: '1px 7px',
+              cursor: 'pointer',
+              fontFamily: '"Segoe UI",Arial,sans-serif',
+            }}
+          >
+            🗑 Limpiar
+          </button>
+        </div>
       </div>
 
-      {/* Scrollable log body */}
+      {/* Dark console output — NDC request/response log */}
       <div className="ndc-console-body" ref={bodyRef}>
         {lines.length === 0 && (
           <div className="ndc-console-empty">

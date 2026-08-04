@@ -1102,37 +1102,20 @@ body {
 }
 
 /* ============================================================
-   NDC CONSOLE  (mini "Console view" — Eclipse IDE style)
-   Shows the NDC-style messages sent to / received from the
-   simulated authorizer switch, like a bottom Console panel.
+   NDC CONSOLE DOCK  (bottom "Console view" — Eclipse IDE style)
+   Full-width panel docked at the bottom of the workbench, shows
+   the NDC-style messages sent to / received from the simulated
+   authorizer switch. Tab strip reuses .editor-tabstrip/.editor-tab
+   so it matches the rest of the app's Eclipse chrome.
    ============================================================ */
-.ndc-console {
+.ndc-console-dock {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 220px;
+  height: 200px;
   background: #1C1C1C;
-  border: 1px solid #111111;
-  border-radius: 3px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  border-top: 1px solid #C8C8C8;
   flex-shrink: 0;
-}
-
-.ndc-console-header {
-  height: 26px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 8px;
-  background: linear-gradient(#3a3d4d, #2B2D3A);
-  border-bottom: 1px solid #111111;
-  color: #CCCCCC;
-  font-size: 11px;
-  font-weight: 600;
-  font-family: "Segoe UI", Arial, sans-serif;
-  user-select: none;
 }
 
 .ndc-console-body {
