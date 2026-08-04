@@ -116,7 +116,7 @@ export const useATMStore = create<ATMStore>((set, get) => ({
     if (key === 'ENTER') {
       const s = get().state
       if (s === 'PIN_ENTRY') {
-        if (pin.length >= 4) {
+        if (pin.length === 4) {
           set({ pinConfirmed: true, state: 'MAIN_MENU', pin: '' })
         }
       } else if (s === 'WITHDRAW_AMOUNT') {
@@ -140,7 +140,7 @@ export const useATMStore = create<ATMStore>((set, get) => ({
 
     // Digit keys
     if (/^\d$/.test(key)) {
-      if (state === 'PIN_ENTRY' && pin.length < 8) {
+      if (state === 'PIN_ENTRY' && pin.length < 4) {
         set({ pin: pin + key })
       } else if (
         state === 'WITHDRAW_AMOUNT' ||
