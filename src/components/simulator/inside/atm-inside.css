@@ -1,0 +1,111 @@
+/* "El ATM por dentro" — card + step list, scoped to .atm-inside */
+.atm-inside {
+  width: 100%;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+.atm-inside .iso-figure { margin: 0; }
+.atm-inside .iso-plate { padding: 40px 12px 36px; box-shadow: 0 0 0 1px #C8C8C8; }
+.atm-inside .iso-plate-corners { inset: 14px 16px; }
+.atm-inside .iso-svg { display: block; width: 100%; height: auto; }
+
+/* the part to watch: the panel's own blue instead of the kit's black */
+.atm-inside.iso[data-theme="light"] {
+  --anatomy-lit: #0070C8;
+  --anatomy-lit-top: #DDEBFA;
+  --anatomy-lit-shade: #C2DBF4;
+}
+
+/* the packet = the message. NDC (ATM ↔ switch) blue, ISO 8583 (switch ↔
+   issuer) orange, the reply green. */
+.atm-inside .atm-packet { --pk: #0070C8; --pk-top: #9CC8EE; --pk-side: #5BA2E0; }
+.atm-inside .atm-packet[data-leg="iso"] { --pk: #E05C00; --pk-top: #FFC9A1; --pk-side: #F39A5B; }
+.atm-inside .atm-packet[data-leg="reply"] { --pk: #167516; --pk-top: #A9DDA9; --pk-side: #63B463; }
+.atm-inside .atm-packet .iso-fill { fill: var(--pk-side); }
+.atm-inside .atm-packet .iso-shade { fill: var(--pk-side); }
+.atm-inside .atm-packet .iso-top { fill: var(--pk-top); }
+.atm-inside .atm-packet .iso-edge { stroke: var(--pk); stroke-width: 1; }
+.atm-inside .atm-packet .iso-crease { stroke: var(--pk); }
+.atm-inside .atm-packet { filter: drop-shadow(0 0 3px var(--pk-top)); transition: opacity .3s; }
+
+.atm-inside-stage { position: relative; }
+.atm-inside-tag {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 6px));
+  padding: 2px 7px;
+  background: #0070C8;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 2px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  transition: left .5s ease, top .5s ease;
+}
+.atm-inside-tag::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  margin-left: -4px;
+  border: 4px solid transparent;
+  border-bottom: 0;
+  border-top-color: #0070C8;
+}
+
+.atm-inside-steps {
+  border: 1px solid #C8C8C8;
+  border-top: none;
+  background: #F5F5F5;
+  padding: 10px 12px 12px;
+  font-size: 11px;
+  color: #333;
+}
+.atm-inside-steps ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  counter-reset: step;
+}
+.atm-inside-steps li {
+  counter-increment: step;
+  padding: 2px 6px;
+  border: 1px solid #E4E4E4;
+  border-radius: 2px;
+  background: #fff;
+  color: #777;
+  white-space: nowrap;
+  transition: background .3s, color .3s, border-color .3s;
+}
+.atm-inside-steps li::before { content: counter(step) ". "; }
+.atm-inside-steps li[data-state="done"] { color: #167516; border-color: #b9dcb9; }
+.atm-inside-steps li[data-state="now"] { background: #3B78C4; border-color: #3B78C4; color: #fff; }
+.atm-inside-text {
+  margin: 0;
+  min-height: 4.2em;
+  line-height: 1.45;
+  font-size: 12px;
+  color: #1A1A1A;
+}
+.atm-inside-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  color: #0451A5;
+}
+.atm-inside-actions button {
+  font-size: 11px;
+  padding: 2px 10px;
+  border: 1px solid #C8C8C8;
+  background: #fff;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.atm-inside-actions button:hover { background: #CCE4F7; border-color: #82BDDB; }
+@media (prefers-reduced-motion: reduce) {
+  .atm-inside-steps li, .atm-inside-tag, .atm-inside .atm-packet { transition: none; }
+}

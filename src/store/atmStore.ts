@@ -1,6 +1,20 @@
 import { create } from 'zustand'
 import { buildNDCRequest } from '@/lib/ndc'
 import { useConsoleStore } from './consoleStore'
+import { TRACE_HOLD_MS, maskPan, type Trace } from '@/components/simulator/inside/model'
+
+// The isometric "ATM por dentro" figure plays ~13 s per transaction; the
+// ATM screen holds on "procesando" until the reply reaches the ATM in that
+// timeline, unless the operator skips it.
+let skipHold: (() => void) | null = null
+function holdForTrace(): Promise<void> {
+  return new Promise(resolve => {
+    const timer = setTimeout(done, TRACE_HOLD_MS)
+    function done() { clearTimeout(timer); skipHold = null; resolve() }
+    skipHold = done
+  })
+}
+let traceSeq = 0
 
 export type ATMState =
   | 'IDLE'
@@ -55,6 +69,7 @@ interface ATMStore {
   isProcessing: boolean
   message: string         // status message on screen
   simulatorId: string | null   // current simulator — used as the NDC terminal (LUNO) id
+  trace: Trace | null          // last transaction, as the "ATM por dentro" figure plays it
 
   // Actions
   insertCard: (card: CardData) => void
@@ -68,6 +83,7 @@ interface ATMStore {
   setSimulatorContext: (simulatorId: string) => void
   authorizeAndComplete: () => Promise<void>
   requestBalanceInquiry: () => Promise<void>
+  skipTrace: () => void
 }
 
 export const useATMStore = create<ATMStore>((set, get) => ({
@@ -85,6 +101,7 @@ export const useATMStore = create<ATMStore>((set, get) => ({
   isProcessing: false,
   message: '',
   simulatorId: null,
+  trace: null,
 
   insertCard: (card) => {
     set({ card, state: 'INSERTING_CARD' })
@@ -253,12 +270,14 @@ export const useATMStore = create<ATMStore>((set, get) => ({
       keypadBuffer: '',
       isProcessing: false,
       message: '',
+      trace: null,
     }),
 
   setProcessing: (v) => set({ isProcessing: v }),
   setMessage: (msg) => set({ message: msg }),
   setLastTransaction: (tx) => set({ lastTransaction: tx }),
   setSimulatorContext: (simulatorId) => set({ simulatorId }),
+  skipTrace: () => skipHold?.(),
 
   // ───────────────────────────────────────────────────────────────────
   // authorizeAndComplete — builds an NDC-style request for the current
@@ -289,6 +308,20 @@ export const useATMStore = create<ATMStore>((set, get) => ({
     log('info', request.raw)
     request.fields.forEach(f => log('info', `   ${f.label.padEnd(16, ' ')}: ${f.value}`))
     log('wait', '⏳ Esperando autorización del host...')
+    const hold = holdForTrace()
+    set({
+      trace: {
+        id: ++traceSeq,
+        txnType: type,
+        amount: amount,
+        maskedPan: maskPan(card?.cardNumber ?? ''),
+        stan: request.stan,
+        luno: request.luno,
+        ndcRaw: request.raw,
+        response: null,
+        failed: false,
+      },
+    })
 
     try {
       const res = await fetch('/api/switch/authorize', {
@@ -303,6 +336,8 @@ export const useATMStore = create<ATMStore>((set, get) => ({
         }),
       })
       const data = await res.json()
+      const t = get().trace
+      if (t) set({ trace: { ...t, response: { approved: !!data.approved, code: data.responseCode ?? '--', raw: data.raw ?? '' } } })
 
       log('rx', '◀ Respuesta del switch recibida')
       log('info', data.raw ?? '(sin datos)')
@@ -310,6 +345,7 @@ export const useATMStore = create<ATMStore>((set, get) => ({
         log('info', `   ${f.label.padEnd(16, ' ')}: ${f.value}`)
       )
 
+      await hold
       if (data.approved) {
         log('ok', `✔ Transacción autorizada — código de respuesta ${data.responseCode}`)
         if (type === 'withdraw') {
@@ -347,6 +383,9 @@ export const useATMStore = create<ATMStore>((set, get) => ({
         get().cancel()
       }
     } catch {
+      const t = get().trace
+      if (t) set({ trace: { ...t, failed: true } })
+      skipHold?.()
       log('err', '✘ Error de comunicación con el switch autorizador')
       set({ isProcessing: false })
       get().cancel()
@@ -378,6 +417,20 @@ export const useATMStore = create<ATMStore>((set, get) => ({
     log('info', request.raw)
     request.fields.forEach(f => log('info', `   ${f.label.padEnd(16, ' ')}: ${f.value}`))
     log('wait', '⏳ Esperando autorización del host...')
+    const hold = holdForTrace()
+    set({
+      trace: {
+        id: ++traceSeq,
+        txnType: 'balance',
+        amount: null,
+        maskedPan: maskPan(card.cardNumber),
+        stan: request.stan,
+        luno: request.luno,
+        ndcRaw: request.raw,
+        response: null,
+        failed: false,
+      },
+    })
 
     try {
       const res = await fetch('/api/switch/authorize', {
@@ -392,6 +445,8 @@ export const useATMStore = create<ATMStore>((set, get) => ({
         }),
       })
       const data = await res.json()
+      const t = get().trace
+      if (t) set({ trace: { ...t, response: { approved: !!data.approved, code: data.responseCode ?? '--', raw: data.raw ?? '' } } })
 
       log('rx', '◀ Respuesta del switch recibida')
       log('info', data.raw ?? '(sin datos)')
@@ -399,6 +454,7 @@ export const useATMStore = create<ATMStore>((set, get) => ({
         log('info', `   ${f.label.padEnd(16, ' ')}: ${f.value}`)
       )
 
+      await hold
       if (data.approved) {
         log('ok', `✔ Consulta autorizada — código de respuesta ${data.responseCode}`)
         set({ state: 'BALANCE_RESULT', isProcessing: false, lastBalance: data.balance ?? null })
@@ -408,6 +464,9 @@ export const useATMStore = create<ATMStore>((set, get) => ({
         get().cancel()
       }
     } catch {
+      const t = get().trace
+      if (t) set({ trace: { ...t, failed: true } })
+      skipHold?.()
       log('err', '✘ Error de comunicación con el switch autorizador')
       set({ isProcessing: false })
       get().cancel()

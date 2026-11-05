@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useATMStore, type CardData, type ATMState } from '@/store/atmStore'
 import type { Simulator, SessionUser } from '@/lib/db/types'
+import AtmInsideFigure from '@/components/simulator/inside/AtmInsideFigure'
 import NDCConsole from '@/components/simulator/NDCConsole'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1015,6 +1016,7 @@ export default function SimulatorClient({ simulator, session }: SimulatorClientP
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'center',
+        flexWrap: 'wrap',
         padding: '28px 32px',
         gap: 24,
       }}>
@@ -1148,6 +1150,11 @@ export default function SimulatorClient({ simulator, session }: SimulatorClientP
           onEject={cancel}
           primary={primary}
         />
+
+        {/* ── "El ATM por dentro" — isometric view of the transaction ────── */}
+        <div style={{ flex: '1 1 360px', minWidth: 360, maxWidth: 820 }}>
+          <AtmInsideFigure trace={store.trace} onSkip={store.skipTrace} />
+        </div>
       </div>
 
       {/* ── Console dock — full-width bottom panel (Eclipse Console view
